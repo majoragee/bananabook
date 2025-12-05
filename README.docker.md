@@ -4,26 +4,31 @@
 
 ### Using Docker Compose (Recommended)
 
-1. **Build and start the application:**
+1. **Copy the example docker-compose file:**
+   ```bash
+   cp docker-compose.yml.example docker-compose.yml
+   ```
+
+2. **Build and start the application:**
    ```bash
    docker-compose up -d
    ```
 
-2. **Access the application:**
+3. **Access the application:**
    - Frontend: http://localhost:3000
    - API: http://localhost:3001
 
-3. **View logs:**
+4. **View logs:**
    ```bash
    docker-compose logs -f
    ```
 
-4. **Stop the application:**
+5. **Stop the application:**
    ```bash
    docker-compose down
    ```
 
-5. **Stop and remove data:**
+6. **Stop and remove data:**
    ```bash
    docker-compose down -v
    ```
