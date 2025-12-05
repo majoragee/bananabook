@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  bananabook:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bananabook
+    ports:
+      - "3000:3000"  # Next.js frontend
+      - "3001:3001"  # Express API
+    environment:
+      - NODE_ENV=production
+      - DATA_DIR=/app/data
+    volumes:
+      - bananabook-data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  bananabook-data:
+    driver: local

@@ -5,9 +5,12 @@ import { RecurringTransaction } from './entities/RecurringTransaction';
 import { Transaction } from './entities/Transaction';
 import path from 'path';
 
+const dataDir = process.env.DATA_DIR || process.cwd();
+const dbPath = path.join(dataDir, 'bananabook.db');
+
 export const AppDataSource = new DataSource({
   type: 'better-sqlite3',
-  database: path.join(process.cwd(), 'bananabook.db'),
+  database: dbPath,
   synchronize: true,
   logging: false,
   entities: [Account, RecurringTransaction, Transaction],

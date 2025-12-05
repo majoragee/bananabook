@@ -7,16 +7,20 @@
     "dev:server": "tsx watch server/index.ts",
     "dev:next": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "concurrently \"npm run start:server\" \"npm run start:next\"",
+    "start:server": "node --require reflect-metadata --loader tsx server/index.ts",
+    "start:next": "next start",
     "lint": "eslint"
   },
   "dependencies": {
     "better-sqlite3": "^12.5.0",
+    "concurrently": "^9.2.1",
     "express": "^5.2.1",
     "next": "16.0.6",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "reflect-metadata": "^0.2.2",
+    "tsx": "^4.21.0",
     "typeorm": "^0.3.27"
   },
   "devDependencies": {
@@ -26,11 +30,9 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "concurrently": "^9.2.1",
     "eslint": "^9",
     "eslint-config-next": "16.0.6",
     "tailwindcss": "^4",
-    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }
