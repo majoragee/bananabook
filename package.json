@@ -8,7 +8,7 @@
     "dev:next": "next dev",
     "build": "next build",
     "start": "concurrently \"npm run start:server\" \"npm run start:next\"",
-    "start:server": "node --require reflect-metadata --loader tsx server/index.ts",
+    "start:server": "node --require reflect-metadata --import tsx server/index.ts",
     "start:next": "next start",
     "lint": "eslint"
   },
@@ -21,7 +21,8 @@
     "react-dom": "19.2.0",
     "reflect-metadata": "^0.2.2",
     "tsx": "^4.21.0",
-    "typeorm": "^0.3.27"
+    "typeorm": "^0.3.27",
+    "typescript": "^5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -32,7 +33,6 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.0.6",
-    "tailwindcss": "^4",
-    "typescript": "^5"
+    "tailwindcss": "^4"
   }
 }

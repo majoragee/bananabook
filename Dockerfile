@@ -48,8 +48,8 @@ COPY tsconfig.json ./
 # Copy lib for utilities
 COPY lib ./lib
 
-# Create directory for SQLite database with proper permissions
-RUN mkdir -p /app/data && chown -R node:node /app/data
+# Create directory for SQLite database and set permissions for entire app
+RUN mkdir -p /app/data && chown -R node:node /app
 
 # Switch to non-root user
 USER node
