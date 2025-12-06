@@ -80,7 +80,7 @@ async function calculateProjection(
   endDate.setMonth(endDate.getMonth() + months);
 
   // Determine the start date for projection - use the account start date
-  const startDate = new Date(account.startDate);
+  const startDate = parseDate(account.startDate);
 
   const entries: ProjectionEntry[] = [];
 
@@ -137,8 +137,8 @@ function generateRecurringEntries(
   reconciledTransactions: Transaction[]
 ): ProjectionEntry[] {
   const entries: ProjectionEntry[] = [];
-  const recurringStart = new Date(recurring.startDate);
-  const recurringEnd = recurring.endDate ? new Date(recurring.endDate) : null;
+  const recurringStart = parseDate(recurring.startDate);
+  const recurringEnd = recurring.endDate ? parseDate(recurring.endDate) : null;
 
   // Find already reconciled instances of this recurring transaction
   const reconciledDates = new Set(
@@ -252,6 +252,12 @@ function getNextOccurrence(date: Date, frequency: string): Date {
   }
 
   return next;
+}
+
+// Helper function to parse YYYY-MM-DD string as a Date without timezone shifts
+function parseDate(dateString: string): Date {
+  const [year, month, day] = dateString.split('-').map(Number);
+  return new Date(year, month - 1, day);
 }
 
 function formatDate(date: Date): string {
