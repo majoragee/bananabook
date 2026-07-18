@@ -22,6 +22,8 @@ import {
 import { formatCurrency, formatDate, getTodayString } from '@/lib/utils';
 
 type Tab = 'projection' | 'recurring' | 'transactions';
+type Toast = { kind: 'error' | 'success'; msg: string };
+type DeleteTarget = { id: number; kind: 'recurring' | 'transaction'; label: string };
 
 export default function AccountDetail() {
   const params = useParams();
@@ -47,6 +49,8 @@ export default function AccountDetail() {
     newBalance: string;
   } | null>(null);
   const [editRecurringModal, setEditRecurringModal] = useState<RecurringTransaction | null>(null);
+  const [toast, setToast] = useState<Toast | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<DeleteTarget | null>(null);
   const [editRecurringForm, setEditRecurringForm] = useState({
     description: '',
     amount: '',
@@ -77,6 +81,27 @@ export default function AccountDetail() {
     loadData();
   }, [accountId, projectionMonths]);
 
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(timer);
+  }, [toast]);
+
+  useEffect(() => {
+    const anyModalOpen = reconcileModal || balanceAdjustModal || editRecurringModal || deleteConfirm;
+    if (!anyModalOpen) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setReconcileModal(null);
+        setBalanceAdjustModal(null);
+        setEditRecurringModal(null);
+        setDeleteConfirm(null);
+      }
+    }
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [reconcileModal, balanceAdjustModal, editRecurringModal, deleteConfirm]);
+
   async function loadData() {
     try {
       setLoading(true);
@@ -94,7 +119,7 @@ export default function AccountDetail() {
       setProjection(projectionData.projection);
     } catch (error) {
       console.error('Failed to load data:', error);
-      alert('Failed to load account data');
+      setToast({ kind: 'error', msg: "Couldn't load the account data — check your connection and try again." });
       router.push('/');
     } finally {
       setLoading(false);
@@ -103,6 +128,10 @@ export default function AccountDetail() {
 
   async function handleCreateRecurring(e: React.FormEvent) {
     e.preventDefault();
+    if (recurringForm.endDate && recurringForm.endDate < recurringForm.startDate) {
+      setToast({ kind: 'error', msg: "End date can't be before the start date." });
+      return;
+    }
     try {
       await createRecurringTransaction({
         accountId,
@@ -122,10 +151,11 @@ export default function AccountDetail() {
         endDate: '',
       });
       setShowRecurringForm(false);
+      setToast({ kind: 'success', msg: 'Recurring transaction created.' });
       loadData();
     } catch (error) {
       console.error('Failed to create recurring transaction:', error);
-      alert('Failed to create recurring transaction');
+      setToast({ kind: 'error', msg: "Couldn't create the recurring transaction — check your connection and try again." });
     }
   }
 
@@ -147,10 +177,11 @@ export default function AccountDetail() {
         date: getTodayString(),
       });
       setShowTransactionForm(false);
+      setToast({ kind: 'success', msg: 'Transaction recorded.' });
       loadData();
     } catch (error) {
       console.error('Failed to create transaction:', error);
-      alert('Failed to create transaction');
+      setToast({ kind: 'error', msg: "Couldn't record the transaction — check your connection and try again." });
     }
   }
 
@@ -177,10 +208,11 @@ export default function AccountDetail() {
         updateRecurringAmount: false,
       });
       closeReconcileModal();
+      setToast({ kind: 'success', msg: 'Transaction reconciled.' });
       loadData();
     } catch (error) {
       console.error('Failed to reconcile transaction:', error);
-      alert('Failed to reconcile transaction');
+      setToast({ kind: 'error', msg: "Couldn't reconcile the transaction — check your connection and try again." });
     }
   }
 
@@ -194,10 +226,11 @@ export default function AccountDetail() {
         amount: entry.amount,
         updateRecurringAmount: false,
       });
+      setToast({ kind: 'success', msg: 'Transaction reconciled.' });
       loadData();
     } catch (error) {
       console.error('Failed to reconcile transaction:', error);
-      alert('Failed to reconcile transaction');
+      setToast({ kind: 'error', msg: "Couldn't reconcile the transaction — check your connection and try again." });
     }
   }
 
@@ -206,7 +239,7 @@ export default function AccountDetail() {
 
     const amount = parseFloat(reconcileModal.customAmount);
     if (isNaN(amount)) {
-      alert('Please enter a valid amount');
+      setToast({ kind: 'error', msg: 'Please enter a valid amount.' });
       return;
     }
 
@@ -218,10 +251,11 @@ export default function AccountDetail() {
         updateRecurringAmount: reconcileModal.updateRecurring,
       });
       closeReconcileModal();
+      setToast({ kind: 'success', msg: 'Transaction reconciled.' });
       loadData();
     } catch (error) {
       console.error('Failed to reconcile transaction:', error);
-      alert('Failed to reconcile transaction');
+      setToast({ kind: 'error', msg: "Couldn't reconcile the transaction — check your connection and try again." });
     }
   }
 
@@ -230,7 +264,7 @@ export default function AccountDetail() {
 
     const amount = parseFloat(reconcileModal.customAmount);
     if (isNaN(amount)) {
-      alert('Please enter a valid amount');
+      setToast({ kind: 'error', msg: 'Please enter a valid amount.' });
       return;
     }
 
@@ -240,10 +274,11 @@ export default function AccountDetail() {
         amount,
       });
       closeReconcileModal();
+      setToast({ kind: 'success', msg: 'Estimate updated.' });
       loadData();
     } catch (error) {
       console.error('Failed to update amount:', error);
-      alert('Failed to update amount');
+      setToast({ kind: 'error', msg: "Couldn't update the estimate — check your connection and try again." });
     }
   }
 
@@ -268,6 +303,11 @@ export default function AccountDetail() {
     e.preventDefault();
     if (!editRecurringModal) return;
 
+    if (editRecurringForm.endDate && editRecurringForm.endDate < editRecurringForm.startDate) {
+      setToast({ kind: 'error', msg: "End date can't be before the start date." });
+      return;
+    }
+
     try {
       await updateRecurringTransaction(editRecurringModal.id, {
         description: editRecurringForm.description,
@@ -279,32 +319,39 @@ export default function AccountDetail() {
         active: editRecurringForm.active,
       });
       closeEditRecurringModal();
+      setToast({ kind: 'success', msg: 'Recurring transaction updated.' });
       loadData();
     } catch (error) {
       console.error('Failed to update recurring transaction:', error);
-      alert('Failed to update recurring transaction');
+      setToast({ kind: 'error', msg: "Couldn't update the recurring transaction — check your connection and try again." });
     }
   }
 
-  async function handleDeleteRecurring(id: number) {
-    if (!confirm('Are you sure you want to delete this recurring transaction?')) return;
-    try {
-      await deleteRecurringTransaction(id);
-      loadData();
-    } catch (error) {
-      console.error('Failed to delete recurring transaction:', error);
-      alert('Failed to delete recurring transaction');
-    }
+  function requestDeleteRecurring(id: number, label: string) {
+    setDeleteConfirm({ id, kind: 'recurring', label });
   }
 
-  async function handleDeleteTransaction(id: number) {
-    if (!confirm('Are you sure you want to delete this transaction?')) return;
+  function requestDeleteTransaction(id: number, label: string) {
+    setDeleteConfirm({ id, kind: 'transaction', label });
+  }
+
+  async function confirmDelete() {
+    if (!deleteConfirm) return;
+    const { id, kind } = deleteConfirm;
+    setDeleteConfirm(null);
     try {
-      await deleteTransaction(id);
+      if (kind === 'recurring') {
+        await deleteRecurringTransaction(id);
+      } else {
+        await deleteTransaction(id);
+      }
       loadData();
     } catch (error) {
-      console.error('Failed to delete transaction:', error);
-      alert('Failed to delete transaction');
+      console.error(`Failed to delete ${kind}:`, error);
+      setToast({
+        kind: 'error',
+        msg: `Couldn't delete the ${kind === 'recurring' ? 'recurring transaction' : 'transaction'} — check your connection and try again.`,
+      });
     }
   }
 
@@ -325,14 +372,14 @@ export default function AccountDetail() {
 
     const newBalance = parseFloat(balanceAdjustModal.newBalance);
     if (isNaN(newBalance)) {
-      alert('Please enter a valid balance');
+      setToast({ kind: 'error', msg: 'Please enter a valid balance.' });
       return;
     }
 
     const difference = newBalance - balanceAdjustModal.currentBalance;
 
     if (difference === 0) {
-      alert('Balance is already correct');
+      setToast({ kind: 'success', msg: 'Balance is already correct — nothing to adjust.' });
       closeBalanceAdjustModal();
       return;
     }
@@ -348,34 +395,35 @@ export default function AccountDetail() {
         reconciled: true,
       });
       closeBalanceAdjustModal();
+      setToast({ kind: 'success', msg: 'Balance adjusted.' });
       loadData();
     } catch (error) {
       console.error('Failed to adjust balance:', error);
-      alert('Failed to adjust balance');
+      setToast({ kind: 'error', msg: "Couldn't adjust the balance — check your connection and try again." });
     }
   }
 
   if (loading || !account) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-600">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-ink-mute">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm">
+    <div className="min-h-screen bg-bg">
+      <header className="bg-surface border-b border-line">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <Link href="/" className="text-blue-600 hover:text-blue-800 text-sm mb-2 inline-block">
+          <Link href="/" className="text-accent text-sm mb-2 inline-block">
             ← Back to Accounts
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900">{account.name}</h1>
+          <h1 className="text-2xl font-bold text-ink">{account.name}</h1>
           <div className="mt-2">
-            <span className="text-sm text-gray-800 font-medium">Current Balance: </span>
+            <span className="text-sm text-ink-soft font-medium">Current Balance: </span>
             <button
               onClick={openBalanceAdjustModal}
-              className="text-lg font-semibold text-blue-600 hover:text-blue-800 underline decoration-dotted cursor-pointer"
+              className="num text-2xl font-semibold text-accent underline decoration-dotted underline-offset-4 cursor-pointer"
               title="Click to adjust balance"
             >
               {formatCurrency(account.currentBalance)}
@@ -385,15 +433,112 @@ export default function AccountDetail() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow mb-6">
-          <div className="border-b border-gray-200">
+        {/* Hero verdict band — always visible regardless of active tab */}
+        <div className="card p-6 mb-6">
+          {(() => {
+            const unreconciled = projection.filter(entry => !entry.isReconciled);
+            const firstNegative = unreconciled.find(entry => entry.balance < 0);
+            const lowestEntry = unreconciled.length > 0
+              ? unreconciled.reduce((lowest, entry) => (entry.balance < lowest.balance ? entry : lowest), unreconciled[0])
+              : null;
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            let daysUntil = 0;
+            if (firstNegative) {
+              const negativeDate = new Date(firstNegative.date);
+              daysUntil = Math.ceil((negativeDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+            }
+
+            let daysUntilLowest = 0;
+            if (lowestEntry) {
+              const lowestDate = new Date(lowestEntry.date);
+              daysUntilLowest = Math.ceil((lowestDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+            }
+
+            return (
+              <div className="grid gap-4 md:grid-cols-[1.4fr_1fr]">
+                <div>
+                  {firstNegative ? (
+                    <>
+                      <span className="badge badge-warn">Overdraft ahead</span>
+                      <p className="text-lg text-ink mt-2">
+                        Goes negative{' '}
+                        {daysUntil > 0 ? (
+                          <>
+                            in <span className="font-semibold">{daysUntil} {daysUntil === 1 ? 'day' : 'days'}</span> on{' '}
+                          </>
+                        ) : daysUntil === 0 ? (
+                          <>today on </>
+                        ) : (
+                          <>on </>
+                        )}
+                        <span className="font-semibold">{formatDate(firstNegative.date)}</span>
+                        {' '}reaching{' '}
+                        <span className="stat text-neg">{formatCurrency(firstNegative.balance)}</span>
+                      </p>
+                      <p className="text-xs text-ink-mute mt-1">
+                        Transaction: {firstNegative.description}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <span className="badge badge-mute">On track</span>
+                      <p className="text-lg text-ink mt-2">
+                        Balance stays positive through the next{' '}
+                        {projectionMonths === 1 ? 'month' :
+                         projectionMonths === 12 ? 'year' :
+                         projectionMonths + ' months'}
+                      </p>
+                      {lowestEntry && (
+                        <p className="text-xs text-ink-mute mt-1">
+                          Lowest point{' '}
+                          <span className="stat">{formatCurrency(lowestEntry.balance)}</span>
+                          {' '}
+                          {daysUntilLowest > 0 ? (
+                            <>
+                              in <span className="font-semibold">{daysUntilLowest} {daysUntilLowest === 1 ? 'day' : 'days'}</span> on{' '}
+                            </>
+                          ) : daysUntilLowest === 0 ? (
+                            <>today on </>
+                          ) : (
+                            <>on </>
+                          )}
+                          <span className="font-semibold">{formatDate(lowestEntry.date)}</span>
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="col-head">Current Balance</div>
+                    <div className="stat text-lg text-ink mt-1">{formatCurrency(account.currentBalance)}</div>
+                  </div>
+                  {lowestEntry && (
+                    <div>
+                      <div className="col-head">Lowest Projected</div>
+                      <div className={`stat text-lg mt-1 ${lowestEntry.balance < 0 ? 'text-neg' : 'text-ink'}`}>
+                        {formatCurrency(lowestEntry.balance)}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+
+        <div className="card mb-6">
+          <div className="border-b border-line">
             <nav className="flex -mb-px">
               <button
                 onClick={() => setActiveTab('projection')}
                 className={`px-6 py-3 text-sm font-medium ${
                   activeTab === 'projection'
-                    ? 'border-b-2 border-blue-600 text-blue-600'
-                    : 'text-gray-600 hover:text-gray-800'
+                    ? 'border-b-2 border-accent text-ink'
+                    : 'text-ink-mute hover:text-ink'
                 }`}
               >
                 Balance Projection
@@ -402,8 +547,8 @@ export default function AccountDetail() {
                 onClick={() => setActiveTab('recurring')}
                 className={`px-6 py-3 text-sm font-medium ${
                   activeTab === 'recurring'
-                    ? 'border-b-2 border-blue-600 text-blue-600'
-                    : 'text-gray-600 hover:text-gray-800'
+                    ? 'border-b-2 border-accent text-ink'
+                    : 'text-ink-mute hover:text-ink'
                 }`}
               >
                 Recurring Transactions
@@ -412,8 +557,8 @@ export default function AccountDetail() {
                 onClick={() => setActiveTab('transactions')}
                 className={`px-6 py-3 text-sm font-medium ${
                   activeTab === 'transactions'
-                    ? 'border-b-2 border-blue-600 text-blue-600'
-                    : 'text-gray-600 hover:text-gray-800'
+                    ? 'border-b-2 border-accent text-ink'
+                    : 'text-ink-mute hover:text-ink'
                 }`}
               >
                 Transaction History
@@ -425,15 +570,15 @@ export default function AccountDetail() {
             {activeTab === 'projection' && (
               <div>
                 <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                  <p className="text-sm text-gray-800 font-medium">
-                    Click the <span className="text-green-600 font-bold">✓</span> button for quick reconcile, or click anywhere else on the row to edit the amount.
+                  <p className="text-sm text-ink-soft font-medium">
+                    Tap <span className="text-pos font-bold">✓</span> to confirm a projected item at its estimated amount, or Adjust to enter what actually happened.
                   </p>
                   <div className="flex items-center gap-2">
-                    <label className="text-sm font-semibold text-gray-900">Show:</label>
+                    <label className="text-sm font-semibold text-ink">Show:</label>
                     <select
                       value={projectionMonths}
                       onChange={(e) => setProjectionMonths(parseInt(e.target.value))}
-                      className="px-3 py-2 border border-gray-400 rounded-md text-gray-900 font-medium focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                      className="px-3 py-2 border border-line-strong rounded-md text-ink font-medium bg-surface focus:border-accent focus:ring-1 focus:ring-accent"
                     >
                       <option value={1}>1 month</option>
                       <option value={3}>3 months</option>
@@ -445,108 +590,19 @@ export default function AccountDetail() {
                   </div>
                 </div>
 
-                {/* Balance Status Alert */}
-                {(() => {
-                  const unreconciled = projection.filter(entry => !entry.isReconciled);
-                  const firstNegative = unreconciled.find(entry => entry.balance < 0);
-
-                  if (firstNegative) {
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    const negativeDate = new Date(firstNegative.date);
-                    const daysUntil = Math.ceil((negativeDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-
-                    return (
-                      <div className="mb-4 p-4 bg-red-50 border-2 border-red-300 rounded-lg">
-                        <div className="flex items-start gap-3">
-                          <span className="text-2xl">⚠️</span>
-                          <div className="flex-1">
-                            <h4 className="text-lg font-bold text-red-900 mb-1">
-                              Negative Balance Alert
-                            </h4>
-                            <p className="text-sm text-red-800">
-                              Your balance is projected to go negative{' '}
-                              {daysUntil > 0 ? (
-                                <>
-                                  in <span className="font-bold text-red-900">{daysUntil} {daysUntil === 1 ? 'day' : 'days'}</span> on{' '}
-                                </>
-                              ) : daysUntil === 0 ? (
-                                <>today on </>
-                              ) : (
-                                <>on </>
-                              )}
-                              <span className="font-bold">{formatDate(firstNegative.date)}</span>
-                              {' '}reaching{' '}
-                              <span className="font-bold text-red-900">
-                                {formatCurrency(firstNegative.balance)}
-                              </span>
-                            </p>
-                            <p className="text-xs text-red-700 mt-1">
-                              Transaction: {firstNegative.description}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  // Find the lowest balance
-                  const lowestEntry = unreconciled.reduce((lowest, entry) => {
-                    return entry.balance < lowest.balance ? entry : lowest;
-                  }, unreconciled[0]);
-
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
-                  const lowestDate = new Date(lowestEntry.date);
-                  const daysUntilLowest = Math.ceil((lowestDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-
-                  return (
-                    <div className="mb-4 p-4 bg-green-50 border-2 border-green-300 rounded-lg">
-                      <div className="flex items-start gap-3">
-                        <span className="text-2xl">✅</span>
-                        <div className="flex-1">
-                          <h4 className="text-lg font-bold text-green-900 mb-1">
-                            Balance Healthy
-                          </h4>
-                          <p className="text-sm text-green-800">
-                            Your balance stays positive throughout the next{' '}
-                            {projectionMonths === 1 ? 'month' :
-                             projectionMonths === 12 ? 'year' :
-                             projectionMonths + ' months'}!
-                          </p>
-                          <p className="text-xs text-green-700 mt-2">
-                            Lowest projected balance:{' '}
-                            <span className="font-bold">{formatCurrency(lowestEntry.balance)}</span>
-                            {' '}
-                            {daysUntilLowest > 0 ? (
-                              <>
-                                in <span className="font-bold">{daysUntilLowest} {daysUntilLowest === 1 ? 'day' : 'days'}</span> on{' '}
-                              </>
-                            ) : daysUntilLowest === 0 ? (
-                              <>today on </>
-                            ) : (
-                              <>on </>
-                            )}
-                            <span className="font-bold">{formatDate(lowestEntry.date)}</span>
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })()}
                 <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+                  <table className="min-w-full divide-y divide-line">
+                    <thead className="bg-surface-2">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Balance</th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
-                        <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase w-16"></th>
+                        <th className="col-head px-4 py-3 text-left">Date</th>
+                        <th className="col-head px-4 py-3 text-left">Description</th>
+                        <th className="col-head px-4 py-3 text-right">Amount</th>
+                        <th className="col-head px-4 py-3 text-right">Balance</th>
+                        <th className="col-head px-4 py-3 text-center">Status</th>
+                        <th className="col-head px-2 py-3 text-center w-16"></th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
+                    <tbody className="bg-surface divide-y divide-line">
                       {projection.filter(entry => !entry.isReconciled).map((entry, index) => {
                         const entryDate = new Date(entry.date);
                         const today = new Date();
@@ -559,14 +615,14 @@ export default function AccountDetail() {
                             key={index}
                             className={`${
                               isNegativeBalance
-                                ? 'bg-red-100 hover:bg-red-200'
+                                ? 'bg-neg-soft hover:bg-neg-soft'
                                 : isPastDue
-                                ? 'bg-orange-50 hover:bg-orange-100'
-                                : 'hover:bg-gray-50'
+                                ? 'bg-warn-soft'
+                                : 'hover:bg-surface-2'
                             }`}
                           >
                             <td
-                              className="px-4 py-3 text-sm text-gray-900 cursor-pointer"
+                              className="num px-4 py-3 text-sm text-ink-soft cursor-pointer whitespace-nowrap"
                               onClick={() => {
                                 if (entry.recurringTransactionId) {
                                   openReconcileModal(entry);
@@ -576,7 +632,7 @@ export default function AccountDetail() {
                               {formatDate(entry.date)}
                             </td>
                             <td
-                              className="px-4 py-3 text-sm text-gray-900 cursor-pointer"
+                              className="px-4 py-3 text-sm text-ink cursor-pointer"
                               onClick={() => {
                                 if (entry.recurringTransactionId) {
                                   openReconcileModal(entry);
@@ -586,8 +642,8 @@ export default function AccountDetail() {
                               {entry.description}
                             </td>
                             <td
-                              className={`px-4 py-3 text-sm text-right font-medium cursor-pointer ${
-                                entry.type === 'deposit' ? 'text-green-600' : 'text-red-600'
+                              className={`num px-4 py-3 text-sm text-right font-medium cursor-pointer whitespace-nowrap ${
+                                entry.type === 'deposit' ? 'text-pos' : 'text-neg'
                               }`}
                               onClick={() => {
                                 if (entry.recurringTransactionId) {
@@ -595,12 +651,12 @@ export default function AccountDetail() {
                                 }
                               }}
                             >
-                              {entry.type === 'deposit' ? '+' : '-'}
+                              {entry.type === 'deposit' ? '+' : '−'}
                               {formatCurrency(entry.amount)}
                             </td>
                             <td
-                              className={`px-4 py-3 text-sm text-right font-semibold cursor-pointer ${
-                                entry.balance < 0 ? 'text-red-600' : 'text-gray-900'
+                              className={`num px-4 py-3 text-sm text-right font-semibold cursor-pointer whitespace-nowrap ${
+                                entry.balance < 0 ? 'text-neg' : 'text-ink'
                               }`}
                               onClick={() => {
                                 if (entry.recurringTransactionId) {
@@ -619,20 +675,33 @@ export default function AccountDetail() {
                               }}
                             >
                               {isPastDue ? (
-                                <span className="text-orange-600 font-semibold">⚠ Past Due</span>
+                                <span className="badge badge-warn">Past due</span>
                               ) : (
-                                <span className="text-gray-400">Projected</span>
+                                <span className="badge badge-mute">Projected</span>
                               )}
                             </td>
                             <td className="px-2 py-3 text-center">
                               {entry.recurringTransactionId && (
-                                <button
-                                  onClick={(e) => handleInstantReconcile(entry, e)}
-                                  className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-green-100 hover:bg-green-200 text-green-700 hover:text-green-900 transition-colors font-bold text-lg"
-                                  title="Quick reconcile with estimated amount"
-                                >
-                                  ✓
-                                </button>
+                                <div className="flex items-center justify-center gap-1">
+                                  <button
+                                    onClick={(e) => handleInstantReconcile(entry, e)}
+                                    className="btn-pos w-8 h-8 rounded-md p-0 inline-flex items-center justify-center font-bold text-lg"
+                                    title="Quick reconcile with estimated amount"
+                                    aria-label={`Reconcile ${entry.description} at estimated amount`}
+                                  >
+                                    ✓
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      openReconcileModal(entry);
+                                    }}
+                                    className="btn btn-ghost text-xs px-2 py-1 h-8"
+                                    aria-label={`Adjust ${entry.description}`}
+                                  >
+                                    Adjust
+                                  </button>
+                                </div>
                               )}
                             </td>
                           </tr>
@@ -649,7 +718,7 @@ export default function AccountDetail() {
                 <div className="mb-4 flex justify-end">
                   <button
                     onClick={() => setShowRecurringForm(!showRecurringForm)}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                    className="btn btn-primary"
                   >
                     {showRecurringForm ? 'Cancel' : 'Add Recurring Transaction'}
                   </button>
@@ -663,7 +732,7 @@ export default function AccountDetail() {
                       case 'weekly': return amount * 4;
                       case 'bi-weekly': return amount * 2;
                       case 'monthly': return amount;
-                      case 'yearly': return 0; // Ignore yearly
+                      case 'yearly': return amount / 12;
                       default: return 0;
                     }
                   };
@@ -680,42 +749,38 @@ export default function AccountDetail() {
 
                   return (
                     <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                        <div className="text-sm text-gray-800 font-medium mb-1">
+                      <div className="card p-4">
+                        <div className="col-head mb-2">
                           Monthly Deposits
                         </div>
-                        <div className="text-2xl font-bold text-green-600">
+                        <div className="stat text-2xl text-pos">
                           {formatCurrency(monthlyDeposits)}
                         </div>
-                        <div className="text-xs text-gray-600 mt-1">
+                        <div className="text-xs text-ink-mute mt-1">
                           Estimated per month
                         </div>
                       </div>
-                      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                        <div className="text-sm text-gray-800 font-medium mb-1">
+                      <div className="card p-4">
+                        <div className="col-head mb-2">
                           Monthly Expenses
                         </div>
-                        <div className="text-2xl font-bold text-red-600">
+                        <div className="stat text-2xl text-neg">
                           {formatCurrency(monthlyExpenses)}
                         </div>
-                        <div className="text-xs text-gray-600 mt-1">
+                        <div className="text-xs text-ink-mute mt-1">
                           Estimated per month
                         </div>
                       </div>
-                      <div className={`border rounded-lg p-4 ${
-                        netCashFlow >= 0
-                          ? 'bg-blue-50 border-blue-200'
-                          : 'bg-orange-50 border-orange-200'
-                      }`}>
-                        <div className="text-sm text-gray-800 font-medium mb-1">
+                      <div className="card p-4">
+                        <div className="col-head mb-2">
                           Net Cash Flow
                         </div>
-                        <div className={`text-2xl font-bold ${
-                          netCashFlow >= 0 ? 'text-blue-600' : 'text-orange-600'
+                        <div className={`stat text-2xl ${
+                          netCashFlow >= 0 ? 'text-accent' : 'text-warn'
                         }`}>
-                          {formatCurrency(netCashFlow)}
+                          {netCashFlow >= 0 ? '+' : '−'}{formatCurrency(Math.abs(netCashFlow))}
                         </div>
-                        <div className="text-xs text-gray-600 mt-1">
+                        <div className="text-xs text-ink-mute mt-1">
                           {netCashFlow >= 0 ? 'Surplus per month' : 'Deficit per month'}
                         </div>
                       </div>
@@ -724,10 +789,10 @@ export default function AccountDetail() {
                 })()}
 
                 {showRecurringForm && (
-                  <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                  <div className="bg-surface-2 p-4 rounded-md mb-4">
                     <form onSubmit={handleCreateRecurring} className="space-y-4">
                       <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-1">
+                        <label className="label">
                           Description
                         </label>
                         <input
@@ -737,13 +802,13 @@ export default function AccountDetail() {
                           onChange={(e) =>
                             setRecurringForm({ ...recurringForm, description: e.target.value })
                           }
-                          className="w-full px-3 py-2 border border-gray-400 rounded-md text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                          className="field"
                           placeholder="e.g., Electric Bill"
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-semibold text-gray-900 mb-1">
+                          <label className="label">
                             Amount
                           </label>
                           <input
@@ -754,12 +819,12 @@ export default function AccountDetail() {
                             onChange={(e) =>
                               setRecurringForm({ ...recurringForm, amount: e.target.value })
                             }
-                            className="w-full px-3 py-2 border border-gray-400 rounded-md text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                            className="num field"
                             placeholder="0.00"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-semibold text-gray-900 mb-1">
+                          <label className="label">
                             Type
                           </label>
                           <select
@@ -770,7 +835,7 @@ export default function AccountDetail() {
                                 type: e.target.value as 'deposit' | 'expense',
                               })
                             }
-                            className="w-full px-3 py-2 border border-gray-400 rounded-md text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                            className="field"
                           >
                             <option value="expense">Expense</option>
                             <option value="deposit">Deposit</option>
@@ -778,7 +843,7 @@ export default function AccountDetail() {
                         </div>
                       </div>
                       <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-1">
+                        <label className="label">
                           Frequency
                         </label>
                         <select
@@ -786,10 +851,10 @@ export default function AccountDetail() {
                           onChange={(e) =>
                             setRecurringForm({
                               ...recurringForm,
-                              frequency: e.target.value as any,
+                              frequency: e.target.value as 'daily' | 'weekly' | 'bi-weekly' | 'monthly' | 'yearly',
                             })
                           }
-                          className="w-full px-3 py-2 border border-gray-400 rounded-md text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                          className="field"
                         >
                           <option value="daily">Daily</option>
                           <option value="weekly">Weekly</option>
@@ -800,7 +865,7 @@ export default function AccountDetail() {
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-semibold text-gray-900 mb-1">
+                          <label className="label">
                             Start Date
                           </label>
                           <input
@@ -810,11 +875,11 @@ export default function AccountDetail() {
                             onChange={(e) =>
                               setRecurringForm({ ...recurringForm, startDate: e.target.value })
                             }
-                            className="w-full px-3 py-2 border border-gray-400 rounded-md text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                            className="field"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-semibold text-gray-900 mb-1">
+                          <label className="label">
                             End Date (optional)
                           </label>
                           <input
@@ -823,13 +888,13 @@ export default function AccountDetail() {
                             onChange={(e) =>
                               setRecurringForm({ ...recurringForm, endDate: e.target.value })
                             }
-                            className="w-full px-3 py-2 border border-gray-400 rounded-md text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                            className="field"
                           />
                         </div>
                       </div>
                       <button
                         type="submit"
-                        className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                        className="btn btn-primary w-full"
                       >
                         Create Recurring Transaction
                       </button>
@@ -838,41 +903,41 @@ export default function AccountDetail() {
                 )}
 
                 {recurring.length === 0 ? (
-                  <div className="text-center py-8 text-gray-800 font-medium">
+                  <div className="text-center py-8 text-ink-soft font-medium">
                     No recurring transactions yet. Add one to get started!
                   </div>
                 ) : (
                   <div className="space-y-3">
                     {recurring.map((item) => (
-                      <div key={item.id} className="border border-gray-200 rounded-lg p-4">
+                      <div key={item.id} className="card p-4">
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
-                            <h4 className="font-semibold text-gray-900">{item.description}</h4>
-                            <div className="mt-2 space-y-1 text-sm text-gray-800 font-medium">
+                            <h4 className="font-semibold text-ink">{item.description}</h4>
+                            <div className="mt-2 space-y-1 text-sm text-ink-soft font-medium">
                               <div>
                                 Amount:{' '}
-                                <span className={`font-semibold ${
-                                  item.type === 'deposit' ? 'text-green-600' : 'text-red-600'
+                                <span className={`num font-semibold ${
+                                  item.type === 'deposit' ? 'text-pos' : 'text-neg'
                                 }`}>
-                                  {item.type === 'deposit' ? '+' : '-'}
+                                  {item.type === 'deposit' ? '+' : '−'}
                                   {formatCurrency(item.amount)}
                                 </span>
                               </div>
-                              <div>Frequency: {item.frequency}</div>
-                              <div>Start: {formatDate(item.startDate)}</div>
-                              {item.endDate && <div>End: {formatDate(item.endDate)}</div>}
+                              <div>Frequency: <span className="capitalize">{item.frequency}</span></div>
+                              <div>Start: <span className="num">{formatDate(item.startDate)}</span></div>
+                              {item.endDate && <div>End: <span className="num">{formatDate(item.endDate)}</span></div>}
                             </div>
                           </div>
                           <div className="flex gap-2">
                             <button
                               onClick={() => openEditRecurringModal(item)}
-                              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                              className="text-accent text-sm font-medium"
                             >
                               Edit
                             </button>
                             <button
-                              onClick={() => handleDeleteRecurring(item.id)}
-                              className="text-red-600 hover:text-red-800 text-sm"
+                              onClick={() => requestDeleteRecurring(item.id, item.description)}
+                              className="btn-danger-quiet"
                             >
                               Delete
                             </button>
@@ -890,17 +955,17 @@ export default function AccountDetail() {
                 <div className="mb-4 flex justify-end">
                   <button
                     onClick={() => setShowTransactionForm(!showTransactionForm)}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                    className="btn btn-primary"
                   >
-                    {showTransactionForm ? 'Cancel' : 'Add Ad-Hoc Transaction'}
+                    {showTransactionForm ? 'Cancel' : 'Record a Transaction'}
                   </button>
                 </div>
 
                 {showTransactionForm && (
-                  <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                  <div className="bg-surface-2 p-4 rounded-md mb-4">
                     <form onSubmit={handleCreateTransaction} className="space-y-4">
                       <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-1">
+                        <label className="label">
                           Description
                         </label>
                         <input
@@ -910,13 +975,13 @@ export default function AccountDetail() {
                           onChange={(e) =>
                             setTransactionForm({ ...transactionForm, description: e.target.value })
                           }
-                          className="w-full px-3 py-2 border border-gray-400 rounded-md text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                          className="field"
                           placeholder="e.g., Emergency Car Repair"
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-semibold text-gray-900 mb-1">
+                          <label className="label">
                             Amount
                           </label>
                           <input
@@ -927,12 +992,12 @@ export default function AccountDetail() {
                             onChange={(e) =>
                               setTransactionForm({ ...transactionForm, amount: e.target.value })
                             }
-                            className="w-full px-3 py-2 border border-gray-400 rounded-md text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                            className="num field"
                             placeholder="0.00"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-semibold text-gray-900 mb-1">
+                          <label className="label">
                             Type
                           </label>
                           <select
@@ -940,10 +1005,10 @@ export default function AccountDetail() {
                             onChange={(e) =>
                               setTransactionForm({
                                 ...transactionForm,
-                                type: e.target.value as any,
+                                type: e.target.value as 'deposit' | 'expense' | 'adjustment',
                               })
                             }
-                            className="w-full px-3 py-2 border border-gray-400 rounded-md text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                            className="field"
                           >
                             <option value="expense">Expense</option>
                             <option value="deposit">Deposit</option>
@@ -952,7 +1017,7 @@ export default function AccountDetail() {
                         </div>
                       </div>
                       <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-1">
+                        <label className="label">
                           Date
                         </label>
                         <input
@@ -962,12 +1027,12 @@ export default function AccountDetail() {
                           onChange={(e) =>
                             setTransactionForm({ ...transactionForm, date: e.target.value })
                           }
-                          className="w-full px-3 py-2 border border-gray-400 rounded-md text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                          className="field"
                         />
                       </div>
                       <button
                         type="submit"
-                        className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                        className="btn btn-primary w-full"
                       >
                         Add Transaction
                       </button>
@@ -976,36 +1041,36 @@ export default function AccountDetail() {
                 )}
 
                 {transactions.length === 0 ? (
-                  <div className="text-center py-8 text-gray-800 font-medium">
-                    No transactions yet.
+                  <div className="text-center py-8 text-ink-soft font-medium">
+                    No transactions yet. Record one to get started!
                   </div>
                 ) : (
                   <div className="space-y-3">
                     {transactions.map((txn) => (
-                      <div key={txn.id} className="border border-gray-200 rounded-lg p-4 bg-green-50">
+                      <div key={txn.id} className="card p-4">
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
-                            <h4 className="font-semibold text-gray-900">{txn.description}</h4>
-                            <div className="mt-2 space-y-1 text-sm text-gray-800 font-medium">
+                            <h4 className="font-semibold text-ink">{txn.description}</h4>
+                            <div className="mt-2 space-y-1 text-sm text-ink-soft font-medium">
                               <div>
                                 Amount:{' '}
-                                <span className={`font-semibold ${
-                                  txn.type === 'deposit' ? 'text-green-600' : 'text-red-600'
+                                <span className={`num font-semibold ${
+                                  txn.type === 'deposit' ? 'text-pos' : 'text-neg'
                                 }`}>
-                                  {txn.type === 'deposit' ? '+' : '-'}
+                                  {txn.type === 'deposit' ? '+' : '−'}
                                   {formatCurrency(txn.amount)}
                                 </span>
                               </div>
-                              <div>Date: {formatDate(txn.date)}</div>
-                              <div>Type: {txn.type}</div>
+                              <div>Date: <span className="num">{formatDate(txn.date)}</span></div>
+                              <div>Type: <span className="capitalize">{txn.type}</span></div>
                               {txn.reconciledDate && (
-                                <div>Reconciled: {formatDate(txn.reconciledDate)}</div>
+                                <div>Reconciled: <span className="num">{formatDate(txn.reconciledDate)}</span></div>
                               )}
                             </div>
                           </div>
                           <button
-                            onClick={() => handleDeleteTransaction(txn.id)}
-                            className="text-red-600 hover:text-red-800 text-sm"
+                            onClick={() => requestDeleteTransaction(txn.id, txn.description)}
+                            className="btn-danger-quiet"
                           >
                             Delete
                           </button>
@@ -1023,57 +1088,38 @@ export default function AccountDetail() {
       {/* Reconciliation Modal */}
       {reconcileModal && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
           onClick={closeReconcileModal}
         >
           <div
-            className="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
+            className="card shadow-xl max-w-md w-full p-6"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Confirm actual amount"
             onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') {
-                closeReconcileModal();
-              }
-            }}
           >
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Reconcile Transaction</h3>
+            <h3 className="text-xl font-bold text-ink mb-4">Confirm actual amount</h3>
 
-            <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-              <div className="text-sm text-gray-800 font-medium mb-1">
+            <div className="mb-4 p-4 bg-surface-2 rounded-md">
+              <div className="text-sm text-ink-soft font-medium mb-1">
                 {reconcileModal.entry.description}
               </div>
-              <div className="text-xs text-gray-600">
+              <div className="text-xs text-ink-mute">
                 {formatDate(reconcileModal.entry.date)}
               </div>
-              <div className={`text-lg font-semibold mt-2 ${
-                reconcileModal.entry.type === 'deposit' ? 'text-green-600' : 'text-red-600'
+              <div className={`num text-lg font-semibold mt-2 ${
+                reconcileModal.entry.type === 'deposit' ? 'text-pos' : 'text-neg'
               }`}>
-                Estimated: {reconcileModal.entry.type === 'deposit' ? '+' : '-'}
+                Estimated: {reconcileModal.entry.type === 'deposit' ? '+' : '−'}
                 {formatCurrency(reconcileModal.entry.amount)}
               </div>
             </div>
 
             <div className="space-y-4">
-              {/* Quick Reconcile Button */}
-              <button
-                onClick={handleQuickReconcile}
-                className="w-full bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 font-semibold text-lg"
-              >
-                ✓ Quick Reconcile ({formatCurrency(reconcileModal.entry.amount)})
-              </button>
-
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">or adjust amount</span>
-                </div>
-              </div>
-
               {/* Edit Amount Section */}
               <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Actual Amount
+                <label className="label">
+                  Actual amount
                 </label>
                 <input
                   type="number"
@@ -1087,7 +1133,7 @@ export default function AccountDetail() {
                       handleReconcileWithEdit();
                     }
                   }}
-                  className="w-full px-4 py-2 border border-gray-400 rounded-lg text-gray-900 text-lg font-semibold focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                  className="num field text-lg font-semibold"
                   autoFocus
                 />
               </div>
@@ -1100,47 +1146,43 @@ export default function AccountDetail() {
                   onChange={(e) =>
                     setReconcileModal({ ...reconcileModal, updateRecurring: e.target.checked })
                   }
-                  className="mt-1 h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-400 rounded cursor-pointer"
+                  className="mt-1 h-5 w-5 accent-accent border-line-strong rounded cursor-pointer"
                 />
                 <div className="flex-1">
-                  <div className="text-sm font-semibold text-gray-900">
+                  <div className="text-sm font-semibold text-ink">
                     Also update future occurrences
                   </div>
-                  <div className="text-xs text-gray-600">
+                  <div className="text-xs text-ink-mute">
                     Use this amount for all future projected transactions
                   </div>
                 </div>
               </label>
 
-              {/* Update Amount Only Button */}
-              <button
-                onClick={handleUpdateAmountOnly}
-                className="w-full bg-purple-600 text-white px-4 py-3 rounded-lg hover:bg-purple-700 font-semibold"
-              >
-                💾 Update Amount (Don't Reconcile Yet)
-              </button>
-
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">or reconcile now</span>
-                </div>
-              </div>
-
-              {/* Reconcile with Edit Button */}
+              {/* Primary: Confirm */}
               <button
                 onClick={handleReconcileWithEdit}
-                className="w-full bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 font-semibold"
+                className="btn btn-primary w-full"
               >
-                Reconcile with New Amount
+                Confirm
               </button>
+
+              {/* Secondary: Save estimate only */}
+              <div>
+                <button
+                  onClick={handleUpdateAmountOnly}
+                  className="btn btn-ghost w-full"
+                >
+                  Save estimate only
+                </button>
+                <p className="text-ink-mute text-xs mt-1 text-center">
+                  Updates the forecast without recording it as done.
+                </p>
+              </div>
 
               {/* Cancel Button */}
               <button
                 onClick={closeReconcileModal}
-                className="w-full bg-gray-200 text-gray-800 px-4 py-3 rounded-lg hover:bg-gray-300 font-semibold"
+                className="btn btn-ghost w-full"
               >
                 Cancel
               </button>
@@ -1152,32 +1194,30 @@ export default function AccountDetail() {
       {/* Balance Adjustment Modal */}
       {balanceAdjustModal && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
           onClick={closeBalanceAdjustModal}
         >
           <div
-            className="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
+            className="card shadow-xl max-w-md w-full p-6"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Adjust current balance"
             onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') {
-                closeBalanceAdjustModal();
-              }
-            }}
           >
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Adjust Current Balance</h3>
+            <h3 className="text-xl font-bold text-ink mb-4">Adjust Current Balance</h3>
 
-            <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-              <div className="text-sm text-gray-800 font-medium mb-1">
+            <div className="mb-4 p-4 bg-surface-2 rounded-md">
+              <div className="col-head mb-2">
                 Current Balance
               </div>
-              <div className="text-2xl font-bold text-gray-900">
+              <div className="stat text-2xl text-ink">
                 {formatCurrency(balanceAdjustModal.currentBalance)}
               </div>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                <label className="label">
                   New Balance (from bank statement)
                 </label>
                 <input
@@ -1192,7 +1232,7 @@ export default function AccountDetail() {
                       handleBalanceAdjust();
                     }
                   }}
-                  className="w-full px-4 py-3 border border-gray-400 rounded-lg text-gray-900 text-xl font-semibold focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                  className="num field text-xl font-semibold"
                   autoFocus
                 />
               </div>
@@ -1202,18 +1242,18 @@ export default function AccountDetail() {
                 if (!isNaN(newBalance) && newBalance !== balanceAdjustModal.currentBalance) {
                   const difference = newBalance - balanceAdjustModal.currentBalance;
                   return (
-                    <div className={`p-3 rounded-lg ${
-                      difference > 0 ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+                    <div className={`p-3 rounded-md border border-line ${
+                      difference > 0 ? 'bg-pos-soft' : 'bg-neg-soft'
                     }`}>
-                      <div className="text-sm text-gray-800 font-medium">
+                      <div className="text-sm text-ink-soft font-medium">
                         Adjustment will be:
                       </div>
-                      <div className={`text-lg font-bold ${
-                        difference > 0 ? 'text-green-600' : 'text-red-600'
+                      <div className={`num text-lg font-bold ${
+                        difference > 0 ? 'text-pos' : 'text-neg'
                       }`}>
-                        {difference > 0 ? '+' : ''}{formatCurrency(Math.abs(difference))}
+                        {difference > 0 ? '+' : '−'}{formatCurrency(Math.abs(difference))}
                       </div>
-                      <div className="text-xs text-gray-600 mt-1">
+                      <div className="text-xs text-ink-mute mt-1">
                         A reconciled adjustment transaction will be created
                       </div>
                     </div>
@@ -1224,14 +1264,14 @@ export default function AccountDetail() {
 
               <button
                 onClick={handleBalanceAdjust}
-                className="w-full bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 font-semibold"
+                className="btn btn-primary w-full"
               >
                 Adjust Balance
               </button>
 
               <button
                 onClick={closeBalanceAdjustModal}
-                className="w-full bg-gray-200 text-gray-800 px-4 py-3 rounded-lg hover:bg-gray-300 font-semibold"
+                className="btn btn-ghost w-full"
               >
                 Cancel
               </button>
@@ -1243,46 +1283,43 @@ export default function AccountDetail() {
       {/* Edit Recurring Transaction Modal */}
       {editRecurringModal && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
           onClick={closeEditRecurringModal}
         >
           <div
-            className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto"
+            className="card shadow-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Edit recurring transaction"
             onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') {
-                closeEditRecurringModal();
-              }
-            }}
           >
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Edit Recurring Transaction</h3>
+            <h3 className="text-xl font-bold text-ink mb-4">Edit Recurring Transaction</h3>
 
             {/* Impact explanation */}
-            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
-                <span className="text-lg">ℹ️</span>
+            <div className="mb-6 p-4 bg-accent-soft border border-line rounded-md">
+              <h4 className="font-semibold text-ink mb-2">
                 How will this edit affect my projections?
               </h4>
-              <div className="space-y-2 text-sm text-blue-800">
+              <div className="space-y-2 text-sm text-ink-soft">
                 <div className="flex items-start gap-2">
-                  <span className="font-bold text-green-600 mt-0.5">✓</span>
+                  <span aria-hidden="true" className="mt-1.5 h-2 w-2 rounded-full bg-pos shrink-0" />
                   <div>
-                    <span className="font-semibold">Past reconciled transactions:</span> Will NOT be changed.
-                    These are locked in as actual transactions.
+                    <span className="font-semibold text-pos">Unchanged —</span> Past reconciled transactions
+                    will NOT be changed. These are locked in as actual transactions.
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
-                  <span className="font-bold text-orange-600 mt-0.5">⚠</span>
+                  <span aria-hidden="true" className="mt-1.5 h-2 w-2 rounded-full bg-warn shrink-0" />
                   <div>
-                    <span className="font-semibold">Past unreconciled projections:</span> Will be updated
-                    with the new values from this edit.
+                    <span className="font-semibold text-warn">Updated —</span> Past unreconciled projections
+                    will be updated with the new values from this edit.
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
-                  <span className="font-bold text-blue-600 mt-0.5">→</span>
+                  <span aria-hidden="true" className="mt-1.5 h-2 w-2 rounded-full bg-accent shrink-0" />
                   <div>
-                    <span className="font-semibold">Future projections:</span> Will be recalculated
-                    with the new values from this edit.
+                    <span className="font-semibold text-accent">Recalculated —</span> Future projections
+                    will be recalculated with the new values from this edit.
                   </div>
                 </div>
               </div>
@@ -1290,7 +1327,7 @@ export default function AccountDetail() {
 
             <form onSubmit={handleUpdateRecurring} className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-1">
+                <label className="label">
                   Description
                 </label>
                 <input
@@ -1300,13 +1337,13 @@ export default function AccountDetail() {
                   onChange={(e) =>
                     setEditRecurringForm({ ...editRecurringForm, description: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-400 rounded-md text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="field"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-1">
+                  <label className="label">
                     Amount
                   </label>
                   <input
@@ -1317,11 +1354,11 @@ export default function AccountDetail() {
                     onChange={(e) =>
                       setEditRecurringForm({ ...editRecurringForm, amount: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-gray-400 rounded-md text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    className="num field"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-1">
+                  <label className="label">
                     Type
                   </label>
                   <select
@@ -1332,7 +1369,7 @@ export default function AccountDetail() {
                         type: e.target.value as 'deposit' | 'expense',
                       })
                     }
-                    className="w-full px-3 py-2 border border-gray-400 rounded-md text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    className="field"
                   >
                     <option value="expense">Expense</option>
                     <option value="deposit">Deposit</option>
@@ -1341,7 +1378,7 @@ export default function AccountDetail() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-1">
+                <label className="label">
                   Frequency
                 </label>
                 <select
@@ -1349,10 +1386,10 @@ export default function AccountDetail() {
                   onChange={(e) =>
                     setEditRecurringForm({
                       ...editRecurringForm,
-                      frequency: e.target.value as any,
+                      frequency: e.target.value as 'daily' | 'weekly' | 'bi-weekly' | 'monthly' | 'yearly',
                     })
                   }
-                  className="w-full px-3 py-2 border border-gray-400 rounded-md text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="field"
                 >
                   <option value="daily">Daily</option>
                   <option value="weekly">Weekly</option>
@@ -1364,7 +1401,7 @@ export default function AccountDetail() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-1">
+                  <label className="label">
                     Start Date
                   </label>
                   <input
@@ -1374,11 +1411,11 @@ export default function AccountDetail() {
                     onChange={(e) =>
                       setEditRecurringForm({ ...editRecurringForm, startDate: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-gray-400 rounded-md text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    className="field"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-1">
+                  <label className="label">
                     End Date (optional)
                   </label>
                   <input
@@ -1387,7 +1424,7 @@ export default function AccountDetail() {
                     onChange={(e) =>
                       setEditRecurringForm({ ...editRecurringForm, endDate: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-gray-400 rounded-md text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    className="field"
                   />
                 </div>
               </div>
@@ -1400,31 +1437,77 @@ export default function AccountDetail() {
                     onChange={(e) =>
                       setEditRecurringForm({ ...editRecurringForm, active: e.target.checked })
                     }
-                    className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-400 rounded cursor-pointer"
+                    className="h-5 w-5 accent-accent border-line-strong rounded cursor-pointer"
                   />
-                  <span className="text-sm font-semibold text-gray-900">Active</span>
+                  <span className="text-sm font-semibold text-ink">Active</span>
                 </label>
-                <p className="text-xs text-gray-600 mt-1 ml-7">
-                  Inactive recurring transactions won't appear in future projections
+                <p className="text-xs text-ink-mute mt-1 ml-7">
+                  Inactive recurring transactions won&apos;t appear in future projections
                 </p>
               </div>
 
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 font-semibold"
+                  className="btn btn-primary flex-1"
                 >
                   Save Changes
                 </button>
                 <button
                   type="button"
                   onClick={closeEditRecurringModal}
-                  className="flex-1 bg-gray-200 text-gray-800 px-4 py-3 rounded-lg hover:bg-gray-300 font-semibold"
+                  className="btn btn-ghost flex-1"
                 >
                   Cancel
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {toast && (
+        <div className="fixed bottom-4 inset-x-0 flex justify-center z-50 px-4">
+          <div
+            role={toast.kind === 'error' ? 'alert' : 'status'}
+            className={`card px-4 py-3 text-sm font-medium shadow-xl ${
+              toast.kind === 'error' ? 'bg-neg-soft text-neg' : 'bg-pos-soft text-pos'
+            }`}
+          >
+            {toast.msg}
+          </div>
+        </div>
+      )}
+
+      {deleteConfirm && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => setDeleteConfirm(null)}
+        >
+          <div
+            className="card shadow-xl max-w-sm w-full p-6"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Confirm delete ${deleteConfirm.kind === 'recurring' ? 'recurring transaction' : 'transaction'}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-bold text-ink mb-2">
+              {deleteConfirm.kind === 'recurring' ? 'Delete recurring transaction?' : 'Delete transaction?'}
+            </h3>
+            <p className="text-sm text-ink-soft mb-6">
+              This will permanently delete &ldquo;{deleteConfirm.label}&rdquo;. This can&apos;t be undone.
+            </p>
+            <div className="flex gap-3">
+              <button onClick={confirmDelete} className="btn btn-danger flex-1">
+                Delete
+              </button>
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="btn btn-ghost flex-1"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}

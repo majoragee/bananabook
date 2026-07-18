@@ -1,26 +1,193 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * BananaBook design system — "paper ledger meets trading terminal".
+ * Light, high-contrast, instrument-grade. One deep-teal accent; green/red
+ * carry money direction and always pair with a sign so meaning survives
+ * grayscale (WCAG 1.4.1). OKLCH throughout.
+ */
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  /* Surfaces */
+  --color-bg: oklch(0.985 0.002 240);
+  --color-surface: oklch(1 0 0);
+  --color-surface-2: oklch(0.974 0.003 240);
+
+  /* Ink ramp */
+  --color-ink: oklch(0.23 0.012 250);
+  --color-ink-soft: oklch(0.42 0.012 250);
+  --color-ink-mute: oklch(0.52 0.012 250);
+
+  /* Lines */
+  --color-line: oklch(0.905 0.004 250);
+  --color-line-strong: oklch(0.82 0.006 250);
+
+  /* Brand accent (interactive, focus, active) */
+  --color-accent: oklch(0.47 0.088 214);
+  --color-accent-strong: oklch(0.41 0.09 214);
+  --color-accent-soft: oklch(0.955 0.018 214);
+  --color-on-accent: oklch(0.99 0 0);
+
+  /* Money semantics — text-safe (>=4.5:1 on light surfaces) */
+  --color-pos: oklch(0.50 0.13 155);
+  --color-pos-soft: oklch(0.955 0.032 155);
+  --color-neg: oklch(0.51 0.20 27);
+  --color-neg-soft: oklch(0.955 0.032 27);
+  --color-warn: oklch(0.55 0.12 66);
+  --color-warn-soft: oklch(0.955 0.04 78);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --radius-card: 0.5rem;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-kerning: normal;
+}
+
+/* ---- Numeric type: the instrument ---- */
+.num {
+  font-family: var(--font-geist-mono), ui-monospace, "SF Mono", "Menlo", monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.stat {
+  font-family: var(--font-geist-mono), ui-monospace, "SF Mono", "Menlo", monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+  line-height: 1.05;
+}
+.col-head {
+  font-family: var(--font-geist-mono), ui-monospace, "SF Mono", "Menlo", monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--color-ink-mute);
+}
+
+/* ---- Components ---- */
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.95rem;
+  border-radius: 0.4rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease,
+    color 0.15s ease;
+  white-space: nowrap;
+}
+.btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.btn-primary {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+.btn-primary:hover {
+  background: var(--color-accent-strong);
+}
+.btn-pos {
+  background: var(--color-pos);
+  color: var(--color-on-accent);
+}
+.btn-pos:hover {
+  filter: brightness(0.94);
+}
+.btn-ghost {
+  background: var(--color-surface);
+  border-color: var(--color-line-strong);
+  color: var(--color-ink);
+}
+.btn-ghost:hover {
+  background: var(--color-surface-2);
+}
+.btn-danger-quiet {
+  background: transparent;
+  color: var(--color-neg);
+  padding: 0.35rem 0.5rem;
+  font-size: 0.8125rem;
+}
+.btn-danger-quiet:hover {
+  background: var(--color-neg-soft);
+}
+.btn-danger {
+  background: var(--color-neg);
+  color: var(--color-on-accent);
+}
+.btn-danger:hover {
+  filter: brightness(0.94);
+}
+
+.field {
+  width: 100%;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 0.4rem;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-size: 0.9375rem;
+}
+.field:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
+}
+.field::placeholder {
+  color: var(--color-ink-mute);
+}
+.label {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-ink);
+  margin-bottom: 0.3rem;
+}
+
+/* Status badges — always text + color, never color alone */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.badge-warn {
+  background: var(--color-warn-soft);
+  color: var(--color-warn);
+}
+.badge-mute {
+  background: var(--color-surface-2);
+  color: var(--color-ink-mute);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }
