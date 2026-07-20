@@ -49,3 +49,6 @@ LICENSE
 # Misc
 .prettierrc
 .eslintrc
+
+# Build output
+dist

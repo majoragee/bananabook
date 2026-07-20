@@ -7,7 +7,9 @@
 ## Using the prebuilt image (no build required)
 
 Images are published to GitHub Container Registry for `linux/amd64` and
-`linux/arm64` on every release:
+`linux/arm64` on every release. The image is roughly 354MB uncompressed (about
+half of that to actually download), built from Next.js standalone output with
+the API precompiled to JavaScript, so no build toolchain ships in it:
 
 ```bash
 docker pull ghcr.io/majoragee/bananabook:latest

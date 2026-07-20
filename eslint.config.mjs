@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Compiled server output.
+    "dist/**",
     // Local tooling, not project source.
     ".claude/**",
     ".impeccable/**",

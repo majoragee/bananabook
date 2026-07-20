@@ -30,9 +30,11 @@ jobs:
       - name: Build
         run: npm run build
 
+      # Runs the compiled dist/ output, which is what ships in the image, rather
+      # than the TypeScript sources through tsx.
       - name: Smoke test the API
         run: |
-          DATA_DIR="$RUNNER_TEMP" node --require reflect-metadata --import tsx server/index.ts &
+          DATA_DIR="$RUNNER_TEMP" node dist/index.js &
           for i in $(seq 1 30); do
             if curl -sf http://localhost:3001/api/health > /dev/null; then
               echo "API is up"

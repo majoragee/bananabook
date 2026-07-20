@@ -52,3 +52,6 @@ docker-compose.yml
 # local tooling (Claude Code / impeccable)
 .claude/
 .impeccable/
+
+# compiled server output
+/dist

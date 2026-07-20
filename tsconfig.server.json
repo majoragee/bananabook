@@ -1,0 +1,26 @@
+{
+  // Compiles the Express API to plain CommonJS in dist/, so the runtime image
+  // needs neither tsx nor typescript. TypeORM entities rely on decorator
+  // metadata, which rules out esbuild-based bundlers -- this must be tsc.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "jsx": "preserve",
+    "noEmit": false,
+    "incremental": false,
+    "isolatedModules": false,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "outDir": "dist",
+    "rootDir": "server",
+    "types": ["node"],
+    "plugins": []
+  },
+  "include": ["server/**/*.ts"],
+  "exclude": ["node_modules", "server/**/*.test.ts"]
+}
