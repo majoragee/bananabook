@@ -10,6 +10,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    # Checkout and npm are all this job does; it never writes back.
+    permissions:
+      contents: read
+
     steps:
       - uses: actions/checkout@v4
 
