@@ -1,4 +1,4 @@
-name: Publish Docker image
+name: Publish image and release
 
 on:
   push:
@@ -84,3 +84,49 @@ jobs:
           subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
+
+  # Creates the GitHub release for a version tag. Gated on the image build so a
+  # release is never announced for a version that failed to publish.
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      # Full history so the generated notes can diff against the previous tag.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Image tags carry no leading 'v': the tag v0.1.0 publishes :0.1.0.
+      - name: Derive version
+        id: version
+        run: echo "number=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          # Appended below the body. Commit history since the previous tag.
+          generate_release_notes: true
+          # Treat v1.0.0-rc.1 and similar as prereleases, so they do not become
+          # the release users are pointed at by default.
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          body: |
+            ## Docker
+
+            ```bash
+            docker pull ghcr.io/${{ github.repository }}:${{ steps.version.outputs.number }}
+            ```
+
+            Multi-arch (`linux/amd64`, `linux/arm64`). Pin this version in
+            production rather than tracking `:latest` or `:main`.
+
+            See [README.docker.md](README.docker.md) for deployment and upgrade
+            notes. **Back up `bananabook.db` before upgrading** — the schema is
+            synchronized on boot.
+
+            > BananaBook has no authentication. Run it on a trusted local
+            > network only, never exposed to the internet.
