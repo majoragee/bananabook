@@ -223,32 +223,6 @@ never a published surface: only `PORT` needs to be reachable from anywhere else.
 4. Sort by date and accumulate a running balance.
 5. Report the first entry where the balance drops below zero — that's the overdraft date.
 
-## API reference
-
-The API is served by Express on `API_PORT` (3001 by default), bound to loopback. The
-web server proxies `/api/*` to it — see `app/api/[...path]/route.ts` — so the browser
-only ever talks to `PORT`.
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/health` | Liveness check. |
-| `GET` | `/api/accounts` | List all accounts. |
-| `GET` | `/api/accounts/:id` | One account, with its recurring and actual transactions. |
-| `POST` | `/api/accounts` | Create an account. |
-| `PUT` | `/api/accounts/:id` | Update an account. |
-| `DELETE` | `/api/accounts/:id` | Delete an account and everything under it. |
-| `GET` | `/api/recurring-transactions` | List recurring items, filterable by account. |
-| `GET` | `/api/recurring-transactions/:id` | One recurring item. |
-| `POST` | `/api/recurring-transactions` | Create a recurring item. |
-| `PUT` | `/api/recurring-transactions/:id` | Update a recurring item. |
-| `DELETE` | `/api/recurring-transactions/:id` | Delete a recurring item. |
-| `GET` | `/api/transactions` | List actual transactions; filter by `accountId`, `reconciled`. |
-| `GET` | `/api/transactions/:id` | One transaction. |
-| `POST` | `/api/transactions` | Record a one-off transaction. |
-| `POST` | `/api/transactions/reconcile` | Confirm a projected item, optionally at a corrected amount. |
-| `PUT` | `/api/transactions/:id` | Update a transaction. |
-| `DELETE` | `/api/transactions/:id` | Delete a transaction. |
-
 ## Tech stack
 
 | | |
