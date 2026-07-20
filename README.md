@@ -7,7 +7,10 @@
 [![CI](https://github.com/majoragee/bananabook/actions/workflows/ci.yml/badge.svg)](https://github.com/majoragee/bananabook/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-![The projection view, showing an overdraft four months out](docs/screenshots/projection.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/projection-dark.png">
+  <img alt="The projection view, showing an overdraft four months out" src="docs/screenshots/projection-light.png">
+</picture>
 
 ## The method
 
@@ -46,13 +49,16 @@ Most budgeting tools are rear-view mirrors: they categorize what already left yo
 account. That is useful for judging the past and useless for answering the question
 that actually matters — **are the bills covered, and for how long?**
 
-BananaBook answers with a date. In the screenshot above, the bills account holds
-$1,811.89 and looks perfectly healthy. It isn't: the transfers are running about
-$100/month short of what the bills actually cost, and the annual property tax on
-November 15 pushes it to **-$431.11**. That is 118 days of warning — long enough to
-raise the transfer by a few dollars a paycheck and never notice the problem again.
+BananaBook answers with a date. In the screenshot above, the monthly bills account
+holds $1,647.40 and looks perfectly healthy. It isn't: the transfers are running about
+$118/month short of what the bills actually cost, so the account drains a little each
+month and rent is the line that finally bounces. It crosses zero on **December 1, 2026**
+at **-$304.60**, and keeps sinking to a low of **-$1,320.60**. That is 134 days of
+warning — long enough to raise the transfer by a few dollars a paycheck and never notice
+the problem again.
 
-The second account needs no forecast at all. Its balance *is* the answer.
+Nothing in that view is a category or a chart. It is the ledger you would have written
+out by hand, run forward.
 
 ## Features
 
@@ -69,17 +75,28 @@ The second account needs no forecast at all. Its balance *is* the answer.
   instead of hiding it, and can optionally update the recurring estimate going forward.
 - **Lowest projected balance** — the floor the account is heading for over the whole
   horizon, which is what tells you whether you are under- or over-funding the transfer.
-- **Multiple accounts** — the bills account alongside anything else you want to track,
-  each projected independently.
+- **Multiple accounts** — split the bills that are hard to hold in your head from the
+  ones that aren't: a monthly account for the steady stuff, an annual account for the
+  lumps. Each is projected independently.
 - **No account linking** — nothing connects to your bank. You type the numbers in; they
   stay on your machine.
 - **Light and dark** — follows your system theme by default, with a switch in the header
   to pin either one. The choice is stored in the browser, per device.
 
-![The account list: bills covered, and what's left to spend](docs/screenshots/dashboard.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/dashboard-dark.png">
+  <img alt="The account list: a monthly bills account and an annual bills account" src="docs/screenshots/dashboard-light.png">
+</picture>
 
-The bills account is the one being managed. The everyday account carries no recurring
-items at all — under this method you never forecast it, you just read it.
+Splitting the bills across two accounts is worth doing because the two kinds fail
+differently. Monthly bills are steady enough that a shortfall hides for months — the
+case above. Annual bills do the opposite: nothing happens, nothing happens, and then
+property tax lands in one lump. Holding them apart means a bad month in one never
+disguises itself as a good month in the other.
+
+Note what is *not* here: the everyday spending account. It carries no recurring items
+and needs no forecast, so BananaBook does not track it at all. Its balance is already
+the answer — that is the entire point of funding the bills from somewhere else.
 
 ## Security and threat model
 
