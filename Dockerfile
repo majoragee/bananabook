@@ -76,4 +76,7 @@ EXPOSE 3000
 
 # PORT sets the web port, API_PORT the internal API port; they are separate
 # variables so setting one never moves the other. Both default correctly.
-CMD ["node_modules/.bin/concurrently", "--kill-others", "--names", "api,web", "node dist/index.js", "node server.js"]
+# The API applies .env via its own first import; the web server gets it as a
+# preload, which also lets PORT be read from the file rather than only from the
+# environment. Both are no-ops when no .env is mounted, which is the norm here.
+CMD ["node_modules/.bin/concurrently", "--kill-others", "--names", "api,web", "node dist/index.js", "node --require dotenv/config server.js"]

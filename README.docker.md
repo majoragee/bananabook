@@ -99,6 +99,10 @@ limitations).
 - `API_PORT`: The internal API port (default: `3001`). Independent of `PORT`, and
   applied at startup, so neither needs a rebuild.
 
+Compose's `environment:` block is the usual way to set these. A `.env` file also works
+if you mount one at `/app/.env`, but anything in `environment:` takes precedence over
+it.
+
 ### Ports
 
 - `3000`: the web app — the only port that needs publishing.

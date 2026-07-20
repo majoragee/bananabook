@@ -203,6 +203,11 @@ metal and 3000 or 3001 is already taken, set the one you need:
 PORT=8080 API_PORT=8081 npm start
 ```
 
+Or put them in a `.env` file — copy `.env.example` to `.env` and edit. Both processes
+read it, in development and production alike. Anything already set in the environment
+takes precedence over the file, so Docker's `environment:` block and a one-off
+`PORT=8080 npm start` still win.
+
 The API binds loopback and is reached through the web server's `/api` proxy, so it is
 never a published surface: only `PORT` needs to be reachable from anywhere else.
 

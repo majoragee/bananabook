@@ -1,3 +1,8 @@
+// First import on purpose: ./data-source reads DATA_DIR the moment it loads, so
+// the file has to be applied before anything else is pulled in. Values already
+// present in the environment win, which keeps Docker's `environment:` and an
+// explicit `PORT=… npm start` ahead of whatever the file says.
+import 'dotenv/config';
 import 'reflect-metadata';
 import express from 'express';
 import { initializeDatabase } from './data-source';

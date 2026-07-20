@@ -27,13 +27,13 @@
   "scripts": {
     "dev": "concurrently --kill-others --names api,web \"npm run dev:server\" \"npm run dev:next\"",
     "dev:server": "tsx watch server/index.ts",
-    "dev:next": "next dev",
+    "dev:next": "node --require dotenv/config ./node_modules/.bin/next dev",
     "build": "next build && npm run build:server",
     "build:server": "tsc -p tsconfig.server.json",
     "postbuild": "node -e \"require('fs').cpSync('.next/static','.next/standalone/.next/static',{recursive:true})\"",
     "start": "concurrently --kill-others --names api,web \"npm run start:server\" \"npm run start:next\"",
     "start:server": "node dist/index.js",
-    "start:next": "node .next/standalone/server.js",
+    "start:next": "node --require dotenv/config .next/standalone/server.js",
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest"
@@ -41,6 +41,7 @@
   "dependencies": {
     "better-sqlite3": "^12.5.0",
     "concurrently": "^9.2.1",
+    "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "next": "^16.0.7",
     "react": "^19.2.1",
