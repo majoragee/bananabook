@@ -1,6 +1,37 @@
 # BananaBook - Docker Deployment Guide
 
-## Quick Start
+> **Security first:** BananaBook has no authentication. Publish these ports to a
+> trusted LAN or localhost only, never to the public internet. See the
+> [threat model](README.md#security-and-threat-model).
+
+## Using the prebuilt image (no build required)
+
+Images are published to GitHub Container Registry for `linux/amd64` and
+`linux/arm64` on every release:
+
+```bash
+docker pull ghcr.io/majoragee/bananabook:latest
+
+docker run -d \
+  --name bananabook \
+  -p 3000:3000 -p 3001:3001 \
+  -v bananabook-data:/app/data \
+  --restart unless-stopped \
+  ghcr.io/majoragee/bananabook:latest
+```
+
+| Tag | What it points at |
+|-----|-------------------|
+| `latest` | The most recent tagged release |
+| `0.1.0`, `0.1` | A specific version, and the latest patch in that minor line |
+| `main` | The tip of the default branch — moves, may break |
+| `sha-<commit>` | One exact commit, never reused |
+
+To upgrade: `docker pull …:latest`, then recreate the container. **Back up the
+database first** — the schema is auto-synchronized on boot (see the README's known
+limitations).
+
+## Quick Start (building from source)
 
 ### Using Docker Compose (Recommended)
 

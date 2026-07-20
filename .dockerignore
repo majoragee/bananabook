@@ -31,7 +31,21 @@ build
 .DS_Store
 Thumbs.db
 
+# Tests (never needed in the runtime image)
+**/*.test.ts
+vitest.config.ts
+coverage
+
+# Docs and CI
+docs
+.github
+*.md
+LICENSE
+
+# Local tooling
+.claude
+.impeccable
+
 # Misc
-README.md
 .prettierrc
 .eslintrc

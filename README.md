@@ -136,12 +136,31 @@ today's date.
 
 ### Docker
 
+A prebuilt image is published to GitHub Container Registry for `linux/amd64` and
+`linux/arm64`, so it runs on an x86 server or a Raspberry Pi without building
+anything:
+
+```bash
+docker run -d \
+  --name bananabook \
+  -p 3000:3000 -p 3001:3001 \
+  -v bananabook-data:/app/data \
+  ghcr.io/majoragee/bananabook:latest
+```
+
+Or with compose, building from source instead:
+
 ```bash
 cp docker-compose.yml.example docker-compose.yml
 docker compose up -d
 ```
 
 Then open <http://localhost:3000>. Data persists in the `bananabook-data` volume.
+
+Available tags: `latest` (most recent release), `0.1.0` / `0.1` (specific versions),
+`main` (tip of the default branch), and `sha-<commit>` (an exact commit). Pin a
+version tag for anything you care about — `main` moves.
+
 Full deployment notes, including backup and restore, are in
 [README.docker.md](README.docker.md).
 
