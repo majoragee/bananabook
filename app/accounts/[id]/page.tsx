@@ -197,25 +197,6 @@ export default function AccountDetail() {
     setReconcileModal(null);
   }
 
-  async function handleQuickReconcile() {
-    if (!reconcileModal) return;
-
-    try {
-      await reconcileTransaction({
-        recurringTransactionId: reconcileModal.entry.recurringTransactionId!,
-        date: reconcileModal.entry.date,
-        amount: reconcileModal.entry.amount,
-        updateRecurringAmount: false,
-      });
-      closeReconcileModal();
-      setToast({ kind: 'success', msg: 'Transaction reconciled.' });
-      loadData();
-    } catch (error) {
-      console.error('Failed to reconcile transaction:', error);
-      setToast({ kind: 'error', msg: "Couldn't reconcile the transaction — check your connection and try again." });
-    }
-  }
-
   async function handleInstantReconcile(entry: ProjectionEntry, e: React.MouseEvent) {
     e.stopPropagation(); // Prevent opening the modal
 

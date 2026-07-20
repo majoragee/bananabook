@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { FindOptionsWhere } from 'typeorm';
 import { AppDataSource } from '../data-source';
 import { Transaction } from '../entities/Transaction';
 import { Account } from '../entities/Account';
@@ -12,7 +13,7 @@ router.get('/', async (req, res) => {
     const repository = AppDataSource.getRepository(Transaction);
     const { accountId, reconciled } = req.query;
 
-    const where: any = {};
+    const where: FindOptionsWhere<Transaction> = {};
     if (accountId) where.accountId = parseInt(accountId as string);
     if (reconciled !== undefined) where.reconciled = reconciled === 'true';
 
@@ -53,7 +54,6 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const transactionRepository = AppDataSource.getRepository(Transaction);
-    const accountRepository = AppDataSource.getRepository(Account);
 
     const {
       accountId,
