@@ -70,9 +70,10 @@ RUN mkdir -p /app/data && chown node:node /app/data
 
 USER node
 
-# 3000 Next.js frontend, 3001 Express API.
-EXPOSE 3000 3001
+# Only the web port. The API binds loopback and is reached through the app's
+# own /api proxy, so it is never a published surface.
+EXPOSE 3000
 
-# PORT is deliberately left unset: the API falls back to 3001 and the Next
-# server to 3000. Setting it would point both at the same port.
+# PORT sets the web port, API_PORT the internal API port; they are separate
+# variables so setting one never moves the other. Both default correctly.
 CMD ["node_modules/.bin/concurrently", "--kill-others", "--names", "api,web", "node dist/index.js", "node server.js"]

@@ -25,13 +25,13 @@
     "nextjs"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev:server\" \"npm run dev:next\"",
+    "dev": "concurrently --kill-others --names api,web \"npm run dev:server\" \"npm run dev:next\"",
     "dev:server": "tsx watch server/index.ts",
     "dev:next": "next dev",
     "build": "next build && npm run build:server",
     "build:server": "tsc -p tsconfig.server.json",
     "postbuild": "node -e \"require('fs').cpSync('.next/static','.next/standalone/.next/static',{recursive:true})\"",
-    "start": "concurrently \"npm run start:server\" \"npm run start:next\"",
+    "start": "concurrently --kill-others --names api,web \"npm run start:server\" \"npm run start:next\"",
     "start:server": "node dist/index.js",
     "start:next": "node .next/standalone/server.js",
     "lint": "eslint",

@@ -162,7 +162,7 @@ anything:
 ```bash
 docker run -d \
   --name bananabook \
-  -p 3000:3000 -p 3001:3001 \
+  -p 3000:3000 \
   -v bananabook-data:/app/data \
   ghcr.io/majoragee/bananabook:latest
 ```
@@ -189,14 +189,22 @@ Copy `.env.example` to `.env` for local development.
 
 | Variable   | Default            | Purpose |
 |------------|--------------------|---------|
-| `NODE_ENV` | `development`      | Standard Node environment flag. |
-| `DATA_DIR` | current directory  | Where `bananabook.db` is written. Set to `/app/data` in Docker. |
+| `NODE_ENV`   | `development`      | Standard Node environment flag. |
+| `DATA_DIR`   | current directory  | Where `bananabook.db` is written. Set to `/app/data` in Docker. |
+| `PORT`       | `3000`             | The web port — the one you open in a browser. |
+| `API_PORT`   | `3001`             | The internal API port. Change it if something else on the machine already uses 3001. |
+| `API_HOST`   | `127.0.0.1`        | Interface the API binds. Loopback by default; there is rarely a good reason to change it. |
 
-> **Don't set `PORT`.** The frontend and the API are two processes started by a single
-> `npm start`, and both read `PORT` — setting it makes them collide on the same port
-> and the API will fail to bind. The frontend is fixed on 3000 and the API on 3001.
-> To change what the outside world sees, remap the ports in `docker-compose.yml`
-> instead.
+`PORT` and `API_PORT` are independent, so either can be moved without disturbing the
+other, and both take effect at startup — no rebuild. If you run BananaBook on bare
+metal and 3000 or 3001 is already taken, set the one you need:
+
+```bash
+PORT=8080 API_PORT=8081 npm start
+```
+
+The API binds loopback and is reached through the web server's `/api` proxy, so it is
+never a published surface: only `PORT` needs to be reachable from anywhere else.
 
 ## How the projection works
 
@@ -212,8 +220,9 @@ Copy `.env.example` to `.env` for local development.
 
 ## API reference
 
-The API is served by Express on port 3001, and proxied at `/api` by Next.js so the
-browser only ever talks to port 3000.
+The API is served by Express on `API_PORT` (3001 by default), bound to loopback. The
+web server proxies `/api/*` to it — see `app/api/[...path]/route.ts` — so the browser
+only ever talks to `PORT`.
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|

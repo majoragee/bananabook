@@ -16,7 +16,7 @@ docker pull ghcr.io/majoragee/bananabook:latest
 
 docker run -d \
   --name bananabook \
-  -p 3000:3000 -p 3001:3001 \
+  -p 3000:3000 \
   -v bananabook-data:/app/data \
   --restart unless-stopped \
   ghcr.io/majoragee/bananabook:latest
@@ -48,8 +48,7 @@ limitations).
    ```
 
 3. **Access the application:**
-   - Frontend: http://localhost:3000
-   - API: http://localhost:3001
+   - http://localhost:3000
 
 4. **View logs:**
    ```bash
@@ -78,7 +77,6 @@ limitations).
    docker run -d \
      --name bananabook \
      -p 3000:3000 \
-     -p 3001:3001 \
      -v bananabook-data:/app/data \
      -e NODE_ENV=production \
      -e DATA_DIR=/app/data \
@@ -97,11 +95,15 @@ limitations).
 
 - `NODE_ENV`: Set to `production` for production deployment
 - `DATA_DIR`: Directory where the SQLite database will be stored (default: `/app/data`)
+- `PORT`: The web port (default: `3000`)
+- `API_PORT`: The internal API port (default: `3001`). Independent of `PORT`, and
+  applied at startup, so neither needs a rebuild.
 
 ### Ports
 
-- `3000`: Next.js frontend application
-- `3001`: Express backend API
+- `3000`: the web app — the only port that needs publishing.
+- `3001`: the Express API, bound to loopback inside the container. The app proxies
+  `/api/*` to it, so publishing it would only expose a second, unauthenticated way in.
 
 ### Data Persistence
 
@@ -115,8 +117,17 @@ To use different ports, modify the `docker-compose.yml` file:
 
 ```yaml
 ports:
-  - "8080:3000"  # Map host port 8080 to container port 3000
-  - "8081:3001"  # Map host port 8081 to container port 3001
+  - "8080:3000"  # Reach BananaBook on host port 8080
+```
+
+That remaps the published port and needs no change inside the container. If instead
+the container's own ports clash with something — running with `network_mode: host`,
+say — set them directly; they are independent and neither needs a rebuild:
+
+```yaml
+environment:
+  - PORT=8080      # web
+  - API_PORT=8081  # internal API
 ```
 
 ### Database Backup
