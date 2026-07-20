@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import ThemeSwitch from '../../components/ThemeSwitch';
 import {
   getAccount,
   getRecurringTransactions,
@@ -395,21 +396,24 @@ export default function AccountDetail() {
   return (
     <div className="min-h-screen bg-bg">
       <header className="bg-surface border-b border-line">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <Link href="/" className="text-accent text-sm mb-2 inline-block">
-            ← Back to Accounts
-          </Link>
-          <h1 className="text-2xl font-bold text-ink">{account.name}</h1>
-          <div className="mt-2">
-            <span className="text-sm text-ink-soft font-medium">Current Balance: </span>
-            <button
-              onClick={openBalanceAdjustModal}
-              className="num text-2xl font-semibold text-accent underline decoration-dotted underline-offset-4 cursor-pointer"
-              title="Click to adjust balance"
-            >
-              {formatCurrency(account.currentBalance)}
-            </button>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-start justify-between gap-4">
+          <div>
+            <Link href="/" className="text-accent text-sm mb-2 inline-block">
+              ← Back to Accounts
+            </Link>
+            <h1 className="text-2xl font-bold text-ink">{account.name}</h1>
+            <div className="mt-2">
+              <span className="text-sm text-ink-soft font-medium">Current Balance: </span>
+              <button
+                onClick={openBalanceAdjustModal}
+                className="num text-2xl font-semibold text-accent underline decoration-dotted underline-offset-4 cursor-pointer"
+                title="Click to adjust balance"
+              >
+                {formatCurrency(account.currentBalance)}
+              </button>
+            </div>
           </div>
+          <ThemeSwitch />
         </div>
       </header>
 
@@ -559,7 +563,7 @@ export default function AccountDetail() {
                     <select
                       value={projectionMonths}
                       onChange={(e) => setProjectionMonths(parseInt(e.target.value))}
-                      className="px-3 py-2 border border-line-strong rounded-md text-ink font-medium bg-surface focus:border-accent focus:ring-1 focus:ring-accent"
+                      className="px-3 py-2 border border-line-strong rounded-md text-ink font-medium bg-field focus:border-accent focus:ring-1 focus:ring-accent"
                     >
                       <option value={1}>1 month</option>
                       <option value={3}>3 months</option>
@@ -1069,11 +1073,11 @@ export default function AccountDetail() {
       {/* Reconciliation Modal */}
       {reconcileModal && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          className="scrim flex items-center justify-center z-50 p-4"
           onClick={closeReconcileModal}
         >
           <div
-            className="card shadow-xl max-w-md w-full p-6"
+            className="card raised max-w-md w-full p-6"
             role="dialog"
             aria-modal="true"
             aria-label="Confirm actual amount"
@@ -1175,11 +1179,11 @@ export default function AccountDetail() {
       {/* Balance Adjustment Modal */}
       {balanceAdjustModal && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          className="scrim flex items-center justify-center z-50 p-4"
           onClick={closeBalanceAdjustModal}
         >
           <div
-            className="card shadow-xl max-w-md w-full p-6"
+            className="card raised max-w-md w-full p-6"
             role="dialog"
             aria-modal="true"
             aria-label="Adjust current balance"
@@ -1264,11 +1268,11 @@ export default function AccountDetail() {
       {/* Edit Recurring Transaction Modal */}
       {editRecurringModal && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          className="scrim flex items-center justify-center z-50 p-4"
           onClick={closeEditRecurringModal}
         >
           <div
-            className="card shadow-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto"
+            className="card raised max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto"
             role="dialog"
             aria-modal="true"
             aria-label="Edit recurring transaction"
@@ -1451,7 +1455,7 @@ export default function AccountDetail() {
         <div className="fixed bottom-4 inset-x-0 flex justify-center z-50 px-4">
           <div
             role={toast.kind === 'error' ? 'alert' : 'status'}
-            className={`card px-4 py-3 text-sm font-medium shadow-xl ${
+            className={`card raised px-4 py-3 text-sm font-medium ${
               toast.kind === 'error' ? 'bg-neg-soft text-neg' : 'bg-pos-soft text-pos'
             }`}
           >
@@ -1462,11 +1466,11 @@ export default function AccountDetail() {
 
       {deleteConfirm && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          className="scrim flex items-center justify-center z-50 p-4"
           onClick={() => setDeleteConfirm(null)}
         >
           <div
-            className="card shadow-xl max-w-sm w-full p-6"
+            className="card raised max-w-sm w-full p-6"
             role="dialog"
             aria-modal="true"
             aria-label={`Confirm delete ${deleteConfirm.kind === 'recurring' ? 'recurring transaction' : 'transaction'}`}

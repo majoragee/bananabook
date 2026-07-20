@@ -2,39 +2,80 @@
 
 /*
  * BananaBook design system — "paper ledger meets trading terminal".
- * Light, high-contrast, instrument-grade. One deep-teal accent; green/red
- * carry money direction and always pair with a sign so meaning survives
- * grayscale (WCAG 1.4.1). OKLCH throughout.
+ * High-contrast and instrument-grade in both schemes: daylight is paper,
+ * night is the lit panel — a deep cool slate, never black, never neon.
+ * One teal accent; green/red carry money direction and always pair with a
+ * sign so meaning survives grayscale (WCAG 1.4.1). OKLCH throughout.
+ *
+ * Every token is light-dark(light, dark). The scheme is chosen by
+ * `color-scheme` on <html>, set below — system by default, overridable via
+ * [data-theme]. Adding a token means writing both halves; every pair here is
+ * verified at >=4.5:1 for text and >=3:1 for control borders in BOTH schemes.
  */
+
+:root {
+  color-scheme: light dark;
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
 
 @theme inline {
   /* Surfaces */
-  --color-bg: oklch(0.985 0.002 240);
-  --color-surface: oklch(1 0 0);
-  --color-surface-2: oklch(0.974 0.003 240);
+  --color-bg: light-dark(oklch(0.985 0.002 240), oklch(0.178 0.008 250));
+  --color-surface: light-dark(oklch(1 0 0), oklch(0.216 0.009 250));
+  --color-surface-2: light-dark(oklch(0.974 0.003 240), oklch(0.262 0.01 250));
 
   /* Ink ramp */
-  --color-ink: oklch(0.23 0.012 250);
-  --color-ink-soft: oklch(0.42 0.012 250);
-  --color-ink-mute: oklch(0.52 0.012 250);
+  --color-ink: light-dark(oklch(0.23 0.012 250), oklch(0.955 0.004 250));
+  --color-ink-soft: light-dark(oklch(0.42 0.012 250), oklch(0.815 0.008 250));
+  --color-ink-mute: light-dark(oklch(0.52 0.012 250), oklch(0.715 0.01 250));
 
-  /* Lines */
-  --color-line: oklch(0.905 0.004 250);
-  --color-line-strong: oklch(0.82 0.006 250);
+  /* Lines — line-strong bounds controls, so it holds 3:1 (WCAG 1.4.11) */
+  --color-line: light-dark(oklch(0.905 0.004 250), oklch(0.315 0.01 250));
+  --color-line-strong: light-dark(oklch(0.645 0.01 250), oklch(0.545 0.014 250));
 
   /* Brand accent (interactive, focus, active) */
-  --color-accent: oklch(0.47 0.088 214);
-  --color-accent-strong: oklch(0.41 0.09 214);
-  --color-accent-soft: oklch(0.955 0.018 214);
-  --color-on-accent: oklch(0.99 0 0);
+  --color-accent: light-dark(oklch(0.47 0.088 214), oklch(0.74 0.075 214));
+  --color-accent-strong: light-dark(oklch(0.41 0.09 214), oklch(0.8 0.07 214));
+  --color-accent-soft: light-dark(oklch(0.955 0.018 214), oklch(0.295 0.045 214));
+  --color-on-accent: light-dark(oklch(0.99 0 0), oklch(0.19 0.02 240));
 
-  /* Money semantics — text-safe (>=4.5:1 on light surfaces) */
-  --color-pos: oklch(0.50 0.13 155);
-  --color-pos-soft: oklch(0.955 0.032 155);
-  --color-neg: oklch(0.51 0.20 27);
-  --color-neg-soft: oklch(0.955 0.032 27);
-  --color-warn: oklch(0.55 0.12 66);
-  --color-warn-soft: oklch(0.955 0.04 78);
+  /* Money semantics — text-safe on their own surface and their -soft tint.
+     -soft is a row/chip wash: it must stay a whisper, and a dark wash carries
+     much further than a pale one, so the dark halves sit close to the surface.
+     -fill is the filled control, deliberately below the text weight in dark so
+     a column of confirm buttons doesn't outshout the numbers it sits beside. */
+  --color-pos: light-dark(oklch(0.5 0.13 155), oklch(0.78 0.115 155));
+  --color-pos-fill: light-dark(oklch(0.5 0.13 155), oklch(0.66 0.115 155));
+  --color-pos-fill-hover: light-dark(oklch(0.45 0.125 155), oklch(0.73 0.11 155));
+  --color-pos-soft: light-dark(oklch(0.955 0.032 155), oklch(0.255 0.035 155));
+  --color-neg: light-dark(oklch(0.51 0.2 27), oklch(0.715 0.135 27));
+  --color-neg-fill: light-dark(oklch(0.51 0.2 27), oklch(0.655 0.15 27));
+  --color-neg-fill-hover: light-dark(oklch(0.455 0.185 27), oklch(0.72 0.14 27));
+  --color-neg-soft: light-dark(oklch(0.955 0.032 27), oklch(0.262 0.042 27));
+  --color-warn: light-dark(oklch(0.525 0.115 66), oklch(0.8 0.105 80));
+  --color-warn-soft: light-dark(oklch(0.955 0.035 78), oklch(0.248 0.028 70));
+
+  /* Inputs. On paper a white field sits on the card; at night it reads as a
+     well cut into it, one step darker than the surface around it. */
+  --color-field: light-dark(oklch(1 0 0), oklch(0.195 0.008 250));
+
+  /* Scrim behind modals — heavier at night, where the page is already dark */
+  --color-scrim: light-dark(oklch(0.2 0.01 250 / 0.45), oklch(0.08 0.01 250 / 0.68));
+
+  /* Edge of a raised panel: a hairline on paper, a lit rim at night */
+  --color-edge-raised: light-dark(oklch(0.905 0.004 250), oklch(0.545 0.014 250));
+
+  /* Elevation. Light lifts with a soft shadow; dark can't — a shadow on a
+     dark surface is invisible — so it lifts with that rim instead. */
+  --shadow-xl: light-dark(
+    0 18px 40px -12px oklch(0.23 0.012 250 / 0.22),
+    0 24px 50px -12px oklch(0 0 0 / 0.65)
+  );
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -108,11 +149,11 @@ body {
   background: var(--color-accent-strong);
 }
 .btn-pos {
-  background: var(--color-pos);
+  background: var(--color-pos-fill);
   color: var(--color-on-accent);
 }
 .btn-pos:hover {
-  filter: brightness(0.94);
+  background: var(--color-pos-fill-hover);
 }
 .btn-ghost {
   background: var(--color-surface);
@@ -132,11 +173,11 @@ body {
   background: var(--color-neg-soft);
 }
 .btn-danger {
-  background: var(--color-neg);
+  background: var(--color-neg-fill);
   color: var(--color-on-accent);
 }
 .btn-danger:hover {
-  filter: brightness(0.94);
+  background: var(--color-neg-fill-hover);
 }
 
 .field {
@@ -144,7 +185,7 @@ body {
   padding: 0.5rem 0.7rem;
   border: 1px solid var(--color-line-strong);
   border-radius: 0.4rem;
-  background: var(--color-surface);
+  background: var(--color-field);
   color: var(--color-ink);
   font-size: 0.9375rem;
 }
@@ -183,6 +224,58 @@ body {
 .badge-mute {
   background: var(--color-surface-2);
   color: var(--color-ink-mute);
+}
+
+/* Modal scrim — one class so both schemes get the right weight */
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: var(--color-scrim);
+}
+
+/* Raised panels (modals, toasts). A drop shadow reads on paper but vanishes
+   on a dark surface, so at night the panel separates by its edge instead. */
+.raised {
+  box-shadow: var(--shadow-xl);
+  border-color: var(--color-edge-raised);
+}
+
+/* ---- Theme control ---- */
+.theme-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+  padding: 0.1875rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.5rem;
+  background: var(--color-surface-2);
+}
+.theme-switch button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.875rem;
+  height: 1.625rem;
+  border-radius: 0.35rem;
+  color: var(--color-ink-mute);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.theme-switch button:hover {
+  color: var(--color-ink);
+}
+.theme-switch button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+.theme-switch button[aria-pressed="true"] {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: 0 1px 2px oklch(0 0 0 / 0.12);
+}
+.theme-switch svg {
+  width: 0.9375rem;
+  height: 0.9375rem;
 }
 
 @media (prefers-reduced-motion: reduce) {

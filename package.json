@@ -1,6 +1,6 @@
 {
   "name": "bananabook",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "A forward-looking checkbook: projects your account balance from recurring income and bills, and tells you the date it goes negative.",
   "license": "MIT",

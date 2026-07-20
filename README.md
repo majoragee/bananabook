@@ -73,6 +73,8 @@ The second account needs no forecast at all. Its balance *is* the answer.
   each projected independently.
 - **No account linking** — nothing connects to your bank. You type the numbers in; they
   stay on your machine.
+- **Light and dark** — follows your system theme by default, with a switch in the header
+  to pin either one. The choice is stored in the browser, per device.
 
 ![The account list: bills covered, and what's left to spend](docs/screenshots/dashboard.png)
 

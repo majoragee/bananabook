@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { getAccounts, createAccount, deleteAccount, type Account } from '@/lib/api';
 import { formatCurrency, formatDate, getTodayString } from '@/lib/utils';
+import ThemeSwitch from './components/ThemeSwitch';
 
 type Toast = { kind: 'error' | 'success'; msg: string };
 
@@ -96,9 +97,12 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-bg">
       <header className="bg-surface border-b border-line">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <h1 className="text-2xl font-bold text-ink">BananaBook</h1>
-          <p className="text-sm text-ink-soft font-medium">Budget Projection & Account Tracking</p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-ink">BananaBook</h1>
+            <p className="text-sm text-ink-soft font-medium">Budget Projection & Account Tracking</p>
+          </div>
+          <ThemeSwitch />
         </div>
       </header>
 
@@ -209,7 +213,7 @@ export default function Home() {
         <div className="fixed bottom-4 inset-x-0 flex justify-center z-50 px-4">
           <div
             role={toast.kind === 'error' ? 'alert' : 'status'}
-            className={`card px-4 py-3 text-sm font-medium shadow-xl ${
+            className={`card raised px-4 py-3 text-sm font-medium ${
               toast.kind === 'error' ? 'bg-neg-soft text-neg' : 'bg-pos-soft text-pos'
             }`}
           >
@@ -220,11 +224,11 @@ export default function Home() {
 
       {deleteConfirm && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          className="scrim flex items-center justify-center z-50 p-4"
           onClick={() => setDeleteConfirm(null)}
         >
           <div
-            className="card shadow-xl max-w-sm w-full p-6"
+            className="card raised max-w-sm w-full p-6"
             role="dialog"
             aria-modal="true"
             aria-label="Confirm delete account"
