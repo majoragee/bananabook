@@ -272,7 +272,7 @@ scope; opening an issue before a large PR will save you time.
 
 ## License
 
-[MIT](LICENSE) © Craig
+[MIT](LICENSE) © majoragee
 
 ## AI disclosure
 
